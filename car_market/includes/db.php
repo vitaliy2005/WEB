@@ -1,8 +1,8 @@
 <?php
 $host = 'localhost';
 $dbname = 'carmarket';
-$username = 'root';
-$password = '';
+$username = 'user266';
+$password = '226';
 
 try {
     $conn = new mysqli($host, $username, $password, $dbname);

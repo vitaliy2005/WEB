@@ -1,7 +1,7 @@
 body {
     font-family: Arial, sans-serif;
 }
-.container {
+.containera.container {
     max-width: 1200px;
 }
 header nav a {
@@ -14,4 +14,7 @@ header nav a:hover {
     .grid-cols-3 {
         grid-template-columns: 1fr;
     }
+}
+.g-recaptcha {
+    margin: 1rem 0;
 }

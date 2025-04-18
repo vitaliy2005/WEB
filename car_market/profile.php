@@ -8,7 +8,11 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$stmt = $conn->prepare("SELECT * FROM cars WHERE user_id = ?");
+$stmt = $conn->prepare("SELECT cars.*, brands.name AS brand_name, models.name AS model_name 
+                        FROM cars 
+                        JOIN brands ON cars.brand_id = brands.id 
+                        JOIN models ON cars.model_id = models.id 
+                        WHERE cars.user_id = ?");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $cars = $stmt->get_result();
@@ -31,8 +35,8 @@ $cars = $stmt->get_result();
             <?php if ($cars->num_rows > 0): ?>
                 <?php while ($car = $cars->fetch_assoc()): ?>
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <img src="images/uploads/<?= htmlspecialchars($car['image']) ?>" alt="<?= htmlspecialchars($car['brand']) ?>" class="w-full h-48 object-cover rounded mb-4">
-                        <h2 class="text-xl font-semibold"><?= htmlspecialchars($car['brand']) ?> <?= htmlspecialchars($car['model']) ?></h2>
+                        <img src="images/uploads/<?= htmlspecialchars($car['image']) ?>" alt="<?= htmlspecialchars($car['brand_name']) ?>" class="w-full h-48 object-cover rounded mb-4">
+                        <h2 class="text-xl font-semibold"><?= htmlspecialchars($car['brand_name']) ?> <?= htmlspecialchars($car['model_name']) ?></h2>
                         <p class="text-gray-600">Год: <?= htmlspecialchars($car['year']) ?></p>
                         <p class="text-gray-600">Пробег: <?= htmlspecialchars($car['mileage']) ?> км</p>
                         <p class="text-lg font-bold text-blue-600"><?= number_format($car['price'], 0, '.', ' ') ?> ₽</p>

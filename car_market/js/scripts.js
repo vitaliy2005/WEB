@@ -1,4 +1,17 @@
 $(document).ready(function() {
+    // Динамическая загрузка моделей
+    $('#brand_id').change(function() {
+        const brand_id = $(this).val();
+        $.ajax({
+            url: 'get_models.php',
+            method: 'GET',
+            data: { brand_id: brand_id },
+            success: function(data) {
+                $('#model_id').html(data);
+            }
+        });
+    });
+
     // Динамическая фильтрация через AJAX
     $('#filter-form').on('submit', function(e) {
         e.preventDefault();
@@ -8,7 +21,6 @@ $(document).ready(function() {
             data: $(this).serialize(),
             success: function(response) {
                 $('#cars-list').html($(response).find('#cars-list').html());
-                // Обновление пагинации
                 $('nav').html($(response).find('nav').html());
             }
         });
@@ -23,3 +35,12 @@ $(document).ready(function() {
         }, 500);
     });
 });
+
+// Показ номера телефона
+function showPhone(carId) {
+    const phone = document.getElementById('phone-' + carId);
+    phone.style.display = 'block';
+    fetch('get_phone.php?id=' + carId)
+        .then(response => response.text())
+        .then(data => phone.innerText = data);
+}

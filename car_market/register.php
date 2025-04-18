@@ -5,12 +5,14 @@ require_once 'includes/db.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
     $email = $_POST['email'];
+    $phone = $_POST['phone'];
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-    $stmt = $conn->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
-    $stmt->bind_param("sss", $username, $email, $password);
+    $stmt = $conn->prepare("INSERT INTO users (username, email, phone, password) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $username, $email, $phone, $password);
     if ($stmt->execute()) {
         header('Location: login.php');
+        exit;
     } else {
         $error = "Ошибка регистрации. Попробуйте другое имя пользователя или email.";
     }
@@ -40,6 +42,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mb-4">
                 <label for="email" class="block text-sm font-medium">Email</label>
                 <input type="email" name="email" id="email" required class="w-full p-2 border rounded">
+            </div>
+            <div class="mb-4">
+                <label for="phone" class="block text-sm font-medium">Телефон</label>
+                <input type="tel" name="phone" id="phone" required class="w-full p-2 border rounded" pattern="\+?[0-9]{10,15}">
             </div>
             <div class="mb-4">
                 <label for="password" class="block text-sm font-medium">Пароль</label>

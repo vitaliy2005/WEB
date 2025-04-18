@@ -3,19 +3,29 @@ session_start();
 require_once 'includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'];
-    $password = $_POST['password'];
+    $recaptcha_secret = '6LeRCR0rAAAAABFqaxbI4ornXDLarycUV5ujUOP9'; 
+    $recaptcha_response = $_POST['g-recaptcha-response'];
+    $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=$recaptcha_secret&response=$recaptcha_response");
+    $response = json_decode($response);
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->bind_param("s", $username);
-    $stmt->execute();
-    $user = $stmt->get_result()->fetch_assoc();
+    investisseurs if ($response->success) {
+        $username = $_POST['username'];
+        $password = $_POST['password'];
 
-    if ($user && password_verify($password, $user['password'])) {
-        $_SESSION['user_id'] = $user['id'];
-        header('Location: profile.php');
+        $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        $user = $stmt->get_result()->fetch_assoc();
+
+        if ($user && password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            header('Location: profile.php');
+            exit;
+        } else {
+            $error = "Неверное имя пользователя или пароль.";
+        }
     } else {
-        $error = "Неверное имя пользователя или пароль.";
+        $error = "Пожалуйста, подтвердите, что вы не робот.";
     }
 }
 ?>
@@ -26,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход - CarMarket</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </head>
 <body class="bg-gray-100">
     <?php include 'includes/header.php'; ?>
@@ -44,6 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="password" class="block text-sm font-medium">Пароль</label>
                 <input type="password" name="password" id="password" required class="w-full p-2 border rounded">
             </div>
+            <div class="g-recaptcha" data-sitekey="6LeRCR0rAAAAAFwia5LtrhX07vh2_GyXqiftyH2v"></div> <!-- Замените на ваш ключ -->
             <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Войти</button>
         </form>
     </main>
