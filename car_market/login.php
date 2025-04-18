@@ -1,36 +1,68 @@
 <?php
 session_start();
-require_once 'includes/db.php';
+require_once __DIR__ . '/includes/db.php';
+
+// Если пользователь уже авторизован - редирект
+if (isset($_SESSION['user_id'])) {
+    header('Location: ' . ($_SESSION['user_role'] === 'admin' ? 'admin.php' : 'profile.php'));
+    exit;
+}
+
+$error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $recaptcha_secret = '6LeRCR0rAAAAABFqaxbI4ornXDLarycUV5ujUOP9'; 
-    $recaptcha_response = $_POST['g-recaptcha-response'];
-    $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret=$recaptcha_secret&response=$recaptcha_response");
+    // Валидация reCAPTCHA
+    $recaptcha_secret = '6LcGGh0rAAAAAFb48IFDX9L8KKU7JPOaFrZuOHtT';
+    $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+    
+    $url = 'https://www.google.com/recaptcha/api/siteverify';
+    $data = [
+        'secret' => $recaptcha_secret,
+        'response' => $recaptcha_response,
+        'remoteip' => $_SERVER['REMOTE_ADDR']
+    ];
+    
+    $options = [
+        'http' => [
+            'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method' => 'POST',
+            'content' => http_build_query($data)
+        ]
+    ];
+    
+    $context = stream_context_create($options);
+    $response = file_get_contents($url, false, $context);
     $response = json_decode($response);
 
-    investisseurs if ($response->success) {
-        $username = $_POST['username'];
+    if (!$response->success) {
+        $error = "Пожалуйста, подтвердите, что вы не робот.";
+    } else {
+        // Проверка учетных данных
+        $username = trim($_POST['username']);
         $password = $_POST['password'];
-
-        $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+        
+        $stmt = $conn->prepare("SELECT id, username, password, is_admin FROM users WHERE username = ? LIMIT 1");
         $stmt->bind_param("s", $username);
         $stmt->execute();
         $user = $stmt->get_result()->fetch_assoc();
-
+        
         if ($user && password_verify($password, $user['password'])) {
+            // Успешная авторизация
             $_SESSION['user_id'] = $user['id'];
-            header('Location: profile.php');
+            $_SESSION['user_role'] = $user['is_admin'] ? 'admin' : 'user';
+            $_SESSION['username'] = $user['username'];
+            
+            // Редирект по роли
+            header('Location: ' . ($user['is_admin'] ? 'admin.php' : 'profile.php'));
             exit;
         } else {
             $error = "Неверное имя пользователя или пароль.";
         }
-    } else {
-        $error = "Пожалуйста, подтвердите, что вы не робот.";
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="ру">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -42,24 +74,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include 'includes/header.php'; ?>
     
     <main class="container mx-auto py-8">
-        <h1 class="text-3xl font-bold mb-8">Вход</h1>
-        <?php if (isset($error)): ?>
-            <p class="text-red-500 mb-4"><?= htmlspecialchars($error) ?></p>
-        <?php endif; ?>
-        <form method="POST" class="bg-white p-6 rounded-lg shadow-md">
-            <div class="mb-4">
-                <label for="username" class="block text-sm font-medium">Имя пользователя</label>
-                <input type="text" name="username" id="username" required class="w-full p-2 border rounded">
+        <div class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md">
+            <h1 class="text-2xl font-bold mb-6 text-center">Вход в систему</h1>
+            
+            <?php if ($error): ?>
+                <div class="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+                    <?= htmlspecialchars($error) ?>
+                </div>
+            <?php endif; ?>
+            
+            <form method="POST" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700">Имя пользователя</label>
+                    <input type="text" id="username" name="username" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Пароль</label>
+                    <input type="password" id="password" name="password" required
+                           class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="g-recaptcha" data-sitekey="6LcGGh0rAAAAAFCBa7Ty0sXX6UbEixdhlPOoqCvp"></div>
+                
+                <div>
+                    <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        Войти
+                    </button>
+                </div>
+            </form>
+            
+            <div class="mt-4 text-center">
+                <a href="register.php" class="text-sm text-blue-600 hover:text-blue-500">
+                    Нет аккаунта? Зарегистрируйтесь
+                </a>
             </div>
-            <div class="mb-4">
-                <label for="password" class="block text-sm font-medium">Пароль</label>
-                <input type="password" name="password" id="password" required class="w-full p-2 border rounded">
-            </div>
-            <div class="g-recaptcha" data-sitekey="6LeRCR0rAAAAAFwia5LtrhX07vh2_GyXqiftyH2v"></div> <!-- Замените на ваш ключ -->
-            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Войти</button>
-        </form>
+        </div>
     </main>
 
     <?php include 'includes/footer.php'; ?>
+    
+    <script>
+    // Обработка reCAPTCHA
+    function onSubmit(token) {
+        document.getElementById("login-form").submit();
+    }
+    </script>
 </body>
 </html>

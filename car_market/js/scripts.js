@@ -44,3 +44,47 @@ function showPhone(carId) {
         .then(response => response.text())
         .then(data => phone.innerText = data);
 }
+
+function isAdmin($user_id) {
+    if (!is_numeric($user_id) || $user_id <= 0) {
+        return false;
+    }
+
+    global $conn;
+    
+    // Проверяем соединение с БД
+    if (!$conn || $conn->connect_error) {
+        error_log("Database connection error in isAdmin() function");
+        return false;
+    }
+
+    try {
+        $stmt = $conn->prepare("SELECT is_admin FROM users WHERE id = ?");
+        if (!$stmt) {
+            error_log("Prepare failed: " . $conn->error);
+            return false;
+        }
+
+        $stmt->bind_param("i", $user_id);
+        if (!$stmt->execute()) {
+            error_log("Execute failed: " . $stmt->error);
+            return false;
+        }
+
+        $result = $stmt->get_result();
+        if (!$result) {
+            error_log("Get result failed: " . $stmt->error);
+            return false;
+        }
+
+        $user = $result->fetch_assoc();
+        $stmt->close();
+
+        // Проверяем, что запись найдена и is_admin = 1
+        return !empty($user) && isset($user['is_admin']) && $user['is_admin'] == 1;
+        
+    } catch (Exception $e) {
+        error_log("Error in isAdmin function: " . $e->getMessage());
+        return false;
+    }
+}

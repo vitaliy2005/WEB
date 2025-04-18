@@ -1,0 +1,16 @@
+RewriteEngine On
+
+# Запрещаем доступ к админке для обычных пользователей
+RewriteCond %{REQUEST_URI} ^/admin [NC]
+RewriteCond %{HTTP_COOKIE} !user_role=admin [NC]
+RewriteRule ^ - [F,L]
+
+# Запрещаем доступ к профилю для админов
+RewriteCond %{REQUEST_URI} ^/profile [NC]
+RewriteCond %{HTTP_COOKIE} user_role=admin [NC]
+RewriteRule ^ - [F,L]
+
+# Стандартные правила
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]

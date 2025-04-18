@@ -8,18 +8,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone = $_POST['phone'];
     $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-    $stmt = $conn->prepare("INSERT INTO users (username, email, phone, password) VALUES (?, ?, ?, ?)");
-    $stmt->bind_param("ssss", $username, $email, $phone, $password);
-    if ($stmt->execute()) {
-        header('Location: login.php');
-        exit;
-    } else {
-        $error = "Ошибка регистрации. Попробуйте другое имя пользователя или email.";
+    try {
+        // Проверка, существует ли username
+        $stmt = $conn->prepare("SELECT id FROM users WHERE username = ?");
+        $stmt->bind_param("s", $username);
+        $stmt->execute();
+        if ($stmt->get_result()->num_rows > 0) {
+            $error = "Имя пользователя уже занято.";
+        } else {
+            // Проверка, существует ли email
+            $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            if ($stmt->get_result()->num_rows > 0) {
+                $error = "Email уже зарегистрирован.";
+            } else {
+                // Вставка нового пользователя
+                $stmt = $conn->prepare("INSERT INTO users (username, email, phone, password) VALUES (?, ?, ?, ?)");
+                $stmt->bind_param("ssss", $username, $email, $phone, $password);
+                if ($stmt->execute()) {
+                    header('Location: login.php');
+                    exit;
+                } else {
+                    $error = "Ошибка при регистрации. Попробуйте снова.";
+                }
+            }
+        }
+    } catch (mysqli_sql_exception $e) {
+        $error = "Ошибка базы данных: " . htmlspecialchars($e->getMessage());
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="ру">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
