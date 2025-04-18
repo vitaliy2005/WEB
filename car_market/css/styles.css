@@ -1,0 +1,17 @@
+body {
+    font-family: Arial, sans-serif;
+}
+.container {
+    max-width: 1200px;
+}
+header nav a {
+    transition: color 0.3s;
+}
+header nav a:hover {
+    color: #3b82f6;
+}
+@media (max-width: 768px) {
+    .grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
